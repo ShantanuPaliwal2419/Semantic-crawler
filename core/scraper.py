@@ -1,5 +1,8 @@
 from  datetime import datetime
 import urllib.robotparser
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 
 from pydantic.dataclasses import dataclass
 @dataclass
@@ -26,6 +29,13 @@ def is_allowed_by_robots_txt(url:str) -> bool:
    
     return rp.can_fetch("*", url)
    
-# def extract_links(html:str, base_url:str) -> list[str]:
+def extract_links(html:str, base_url:str) -> list[str]:
 
-        
+    soup = BeautifulSoup(html, "html.parser")
+    links = []
+    for link in soup.find_all("a", href=True):
+      full_url = urljoin(base_url, link["href"])
+      if full_url.startswith(("http://", "https://")):
+        print(full_url)
+        links.append(full_url)
+    return list(set(links))
