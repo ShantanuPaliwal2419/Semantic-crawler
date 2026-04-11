@@ -1,6 +1,9 @@
 from  datetime import datetime
 import urllib.robotparser
+from cohere import client
 import requests
+import httpx
+import asyncio
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
@@ -39,3 +42,30 @@ def extract_links(html:str, base_url:str) -> list[str]:
         print(full_url)
         links.append(full_url)
     return list(set(links))
+
+
+from datetime import datetime
+import httpx
+
+async def fetch_page(url: str) -> RawPage:
+    async with httpx.AsyncClient() as client:
+        try:
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+            response = await client.get(url, timeout=10, headers=headers)
+
+            return RawPage(
+                url=url,
+                html=response.text,
+                status_code=response.status_code,
+                fetched_at=datetime.now()
+            )
+
+        except Exception as e:
+            print(f"Error fetching {url}: {e}")
+
+            return RawPage(
+                url=url,
+                html="",
+                status_code=0,
+                fetched_at=datetime.now()
+            )
