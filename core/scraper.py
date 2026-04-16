@@ -42,7 +42,7 @@ def extract_links(html:str, base_url:str) -> list[str]:
     for link in soup.find_all("a", href=True):
       full_url = urljoin(base_url, link["href"])
       if full_url.startswith(("http://", "https://")):
-        print(full_url)
+        
         links.append(full_url)
     return list(set(links))
 
@@ -92,9 +92,9 @@ async def crawl(url: str , max_pages: int, max_depth: int) -> list[Page]:
             if urlparse(link).netloc == seed_domain:
                 filtered_links.append(link)    
         if current_depth < max_depth:
-            for link in filtered_links:
-                if link not in visited:
-                    queue.append((link, current_depth + 1))
+         for link in filtered_links:
+           if link not in visited and link not in [q[0] for q in queue]:  # add this check
+            queue.append((link, current_depth + 1))
 
         # mark visited
         visited.add(url)
