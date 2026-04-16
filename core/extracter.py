@@ -44,6 +44,17 @@ def extract_metadata(html: str) -> dict:
         "title": title,
         "description": description,
         "keywords": keywords
+
     }
+def extract_headings(soup: BeautifulSoup) -> list[str]:
+    headings = []
+
+    for tag in ["h1", "h2", "h3"]:
+        for heading in soup.find_all(tag):
+            text = heading.get_text(strip=True)
+            if text:
+                headings.append(text)
+
+    return headings  
 def extract(url:str, html:str) -> ExtractedPage:
     extract_metadata(html)
