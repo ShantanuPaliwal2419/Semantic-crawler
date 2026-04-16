@@ -6,6 +6,7 @@ import httpx
 import asyncio
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+from urllib.parse import urlparse
 
 from pydantic.dataclasses import dataclass
 @dataclass
@@ -19,8 +20,10 @@ class Page :
     url : str
     html:str
     links : list[str]
-    fetched_at:datetime    
-
+    fetched_at:datetime   
+    status_code: int 
+class settings:
+    DEFAULT_CRAWL_DELAY_MS = 1000  # 1 second 
 def is_allowed_by_robots_txt(url:str) -> bool:
     rp = urllib.robotparser.RobotFileParser()
     rp.set_url(url + "/robots.txt")
@@ -69,3 +72,43 @@ async def fetch_page(url: str) -> RawPage:
                 status_code=0,
                 fetched_at=datetime.now()
             )
+
+async def crawl(url: str , max_pages: int, max_depth: int) -> list[Page]:
+    queue = [(url, 0)]
+    visited = set()
+    results = []
+    seed_domain = urlparse(url).netloc
+    while queue and len(results) < max_pages:
+        url, current_depth = queue.pop(0)
+        if url in visited :
+            continue
+        raw_page = await fetch_page(url)
+        if not raw_page.html:
+            visited.add(url)
+            continue
+        links = extract_links(raw_page.html, url)
+        filtered_links = []
+        for link in links:
+            if urlparse(link).netloc == seed_domain:
+                filtered_links.append(link)    
+        if current_depth < max_depth:
+            for link in filtered_links:
+                if link not in visited:
+                    queue.append((link, current_depth + 1))
+
+        # mark visited
+        visited.add(url)
+
+        # append result
+        results.append(Page(
+            url=url,
+            html=raw_page.html,
+            links=filtered_links,
+            fetched_at=raw_page.fetched_at,
+            status_code=raw_page.status_code
+        ))
+
+        # crawl delay
+        await asyncio.sleep(settings.DEFAULT_CRAWL_DELAY_MS / 1000)
+
+    return results
