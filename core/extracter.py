@@ -1,6 +1,8 @@
 
 
 
+import re
+
 from bs4 import BeautifulSoup
 from fastapi import requests
 from pydantic.dataclasses import dataclass
@@ -56,5 +58,17 @@ def extract_headings(soup: BeautifulSoup) -> list[str]:
                 headings.append(text)
 
     return headings  
+def clean_text(text: str) -> str:
+    text = re.sub(r"\n\s*\n+", "\n\n", text)  # handle newlines
+    text = re.sub(r"[ \t]{2,}", " ", text)   # handle spaces
+    return text.strip()
+def extract_text(html: str) -> str:
+    soup = BeautifulSoup(html, "html.parser")
+    for script in soup(["script", "style" ,"nav", "footer", "header", "aside"]):
+        script.decompose()
+    text = soup.get_text(separator="\n")
+    cleanText = clean_text(text)
+    return cleanText
+        
 def extract(url:str, html:str) -> ExtractedPage:
     extract_metadata(html)
